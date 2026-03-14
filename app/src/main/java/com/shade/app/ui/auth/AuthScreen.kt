@@ -36,6 +36,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.shade.app.R
@@ -47,18 +48,39 @@ enum class AuthStep {
 
 @Composable
 fun AuthScreen(viewModel: AuthViewModel) {
-    var currentStep by rememberSaveable { mutableStateOf(AuthStep.WELCOME) }
     val uiState by viewModel.uiState.collectAsState()
+    
+    AuthScreenContent(
+        uiState = uiState,
+        onLogin = { shadeId, mnemonic ->
+            viewModel.login(shadeId, mnemonic, "Android Device", "dummy_fcm")
+        },
+        onRegister = {
+            viewModel.register("Android Device", "dummy_fcm")
+        },
+        onResetUiState = {
+            viewModel.resetUiState()
+        }
+    )
+}
+
+@Composable
+fun AuthScreenContent(
+    uiState: AuthUiState,
+    onLogin: (String, List<String>) -> Unit,
+    onRegister: () -> Unit,
+    onResetUiState: () -> Unit
+) {
+    var currentStep by rememberSaveable { mutableStateOf(AuthStep.WELCOME) }
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(currentStep) {
-        viewModel.resetUiState()
+        onResetUiState()
     }
 
     BackHandler(enabled = currentStep != AuthStep.WELCOME) {
         currentStep = AuthStep.WELCOME
     }
-
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -111,13 +133,13 @@ fun AuthScreen(viewModel: AuthViewModel) {
                     when (step) {
                         AuthStep.WELCOME -> WelcomeLayout(onNavigate = { currentStep = it })
                         AuthStep.LOGIN -> LoginLayout(
-                            viewModel = viewModel,
                             uiState = uiState,
+                            onLogin = onLogin,
                             onBack = { currentStep = AuthStep.WELCOME }
                         )
                         AuthStep.REGISTER -> RegisterLayout(
-                            viewModel = viewModel,
                             uiState = uiState,
+                            onRegister = onRegister,
                             onBack = { currentStep = AuthStep.WELCOME },
                             snackbarHostState = snackbarHostState
                         )
@@ -275,8 +297,8 @@ fun InfoBubble(text: String, icon: ImageVector) {
 
 @Composable
 fun LoginLayout(
-    viewModel: AuthViewModel,
     uiState: AuthUiState,
+    onLogin: (String, List<String>) -> Unit,
     onBack: () -> Unit
 ) {
     var shadeIdInput by remember { mutableStateOf("") }
@@ -343,7 +365,7 @@ fun LoginLayout(
             Button(
                 onClick = {
                     val mnemonicList = mnemonicInput.trim().split("\\s+".toRegex())
-                    viewModel.login(shadeIdInput, mnemonicList, "Android Device", "dummy_fcm")
+                    onLogin(shadeIdInput, mnemonicList)
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -367,8 +389,8 @@ fun LoginLayout(
 
 @Composable
 fun RegisterLayout(
-    viewModel: AuthViewModel,
     uiState: AuthUiState,
+    onRegister: () -> Unit,
     onBack: () -> Unit,
     snackbarHostState: SnackbarHostState
 ) {
@@ -407,7 +429,7 @@ fun RegisterLayout(
 
             if (uiState !is AuthUiState.Success) {
                 Button(
-                    onClick = { viewModel.register("Android Device", "dummy_fcm") },
+                    onClick = onRegister,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(60.dp),
@@ -553,4 +575,15 @@ fun SuccessSection(state: AuthUiState.Success, snackbarHostState: SnackbarHostSt
             }
         }
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun AuthScreenPreview() {
+    AuthScreenContent(
+        uiState = AuthUiState.Idle,
+        onLogin = { _, _ -> },
+        onRegister = {},
+        onResetUiState = {}
+    )
 }
