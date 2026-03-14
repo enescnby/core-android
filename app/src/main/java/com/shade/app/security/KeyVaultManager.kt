@@ -42,6 +42,14 @@ class KeyVaultManager(context: Context) {
         return sharedPreferences.getString("JWT_ACCESS_TOKEN", null)
     }
 
+    fun saveShadeId(shadeId: String) {
+        sharedPreferences.edit().putString("SHADE_ID", shadeId).apply()
+    }
+
+    fun getShadeId(): String? {
+        return sharedPreferences.getString("SHADE_ID", null)
+    }
+
     fun clearVault() {
         sharedPreferences.edit().clear().apply()
     }

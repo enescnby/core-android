@@ -1,5 +1,6 @@
 package com.shade.app.crypto
 
+import android.util.Base64
 import org.bouncycastle.crypto.generators.Ed25519KeyPairGenerator
 import org.bouncycastle.crypto.params.Ed25519KeyGenerationParameters
 import org.bouncycastle.crypto.params.Ed25519PrivateKeyParameters
@@ -7,8 +8,21 @@ import org.bouncycastle.crypto.params.Ed25519PublicKeyParameters
 import org.bouncycastle.crypto.signers.Ed25519Signer
 import org.bouncycastle.util.encoders.Hex
 import java.security.SecureRandom
+import javax.crypto.Cipher
+import javax.crypto.SecretKeyFactory
+import javax.crypto.spec.GCMParameterSpec
+import javax.crypto.spec.PBEKeySpec
+import javax.crypto.spec.SecretKeySpec
 
 class AuthCryptoManager {
+
+    companion object {
+        private const val PBKDF2_ALGORITHM = "PBKDF2WithHmacSHA256"
+        private const val AES_ALGORITHM = "AES/GCM/NoPadding"
+        private const val ITERATION_COUNT = 100_000
+        private const val KEY_LENGTH = 256
+        private const val IV_LENGTH = 12
+    }
 
     fun generateEd25519KeyPairHex(): Pair<String, String> {
         val random = SecureRandom()
@@ -38,5 +52,39 @@ class AuthCryptoManager {
         val signatureBytes = signer.generateSignature()
 
         return Hex.toHexString(signatureBytes)
+    }
+
+    fun deriveAesKeyFromMnemonic(mnemonic: List<String>, salt: String): SecretKeySpec {
+        val passphraseChars = mnemonic.joinToString(" ").toCharArray()
+        val saltBytes = salt.toByteArray(Charsets.UTF_8)
+
+        val spec = PBEKeySpec(passphraseChars, saltBytes, ITERATION_COUNT, KEY_LENGTH)
+        val factory = SecretKeyFactory.getInstance(PBKDF2_ALGORITHM)
+
+        return SecretKeySpec(factory.generateSecret(spec).encoded, "AES")
+    }
+
+    fun encryptPrivateKey(privateKeyHex: String, aesKey: SecretKeySpec): String {
+        val cipher = Cipher.getInstance(AES_ALGORITHM)
+        val iv = ByteArray(IV_LENGTH)
+        SecureRandom().nextBytes(iv)
+
+        cipher.init(Cipher.ENCRYPT_MODE, aesKey, GCMParameterSpec(128, iv))
+        val encryptedBytes = cipher.doFinal(privateKeyHex.toByteArray(Charsets.UTF_8))
+
+        val combined = iv + encryptedBytes
+        return Base64.encodeToString(combined, Base64.NO_WRAP)
+    }
+
+    fun decryptPrivateKey(encryptedDataB64: String, aesKey: SecretKeySpec): String {
+        val combined = Base64.decode(encryptedDataB64, Base64.NO_WRAP)
+        val iv = combined.copyOfRange(0, IV_LENGTH)
+        val encryptedBytes = combined.copyOfRange(IV_LENGTH, combined.size)
+
+        val cipher = Cipher.getInstance(AES_ALGORITHM)
+        cipher.init(Cipher.DECRYPT_MODE, aesKey, GCMParameterSpec(128, iv))
+
+        val decryptedBytes = cipher.doFinal(encryptedBytes)
+        return String(decryptedBytes, Charsets.UTF_8)
     }
 }
