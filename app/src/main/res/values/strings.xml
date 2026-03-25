@@ -1,3 +1,25 @@
 <resources>
     <string name="app_name">Shade</string>
+    <string name="login">Login</string>
+    <string name="register">Register</string>
+    <string name="shade_id">Shade ID</string>
+    <string name="mnemonic_label">12 Words Mnemonic</string>
+    <string name="mnemonic_placeholder">Left spaces between words</string>
+    <string name="register_notice">When your account is created, special security keys will be generated for you.</string>
+    <string name="register_safely">Register Safely</string>
+    <string name="no_account_register">Don\'t you have an account? Register</string>
+    <string name="already_have_account_login">Already have an account? Login</string>
+    <string name="save_mnemonic_warning">PLEASE SAVE THESE WORDS! If you lose them, you cannot access your account.</string>
+    <string name="copy_mnemonic">Copy Mnemonic to Clipboard</string>
+    <string name="welcome_title">Welcome to Shade</string>
+    <string name="welcome_subtitle">Secure and Private Messaging</string>
+    <string name="mnemonic_copied">Mnemonic copied to clipboard</string>
+    <string name="account_created">Your account created successfully</string>
+    <string name="login_successful">Welcome back! Login successful</string>
+    <string name="something_went_wrong">Something went wrong! Please try again later</string>
+    <string name="welcome_greeting">Welcome to the Shade</string>
+    <string name="privacy_motto">Shade exists for maximum privacy.</string>
+    <string name="no_personal_data">No e-mail. No phone number.</string>
+    <string name="free_anonymous">Creating account is free and anonymous.</string>
+    <string name="id_copied">Shade ID copied to clipboard</string>
 </resources>
