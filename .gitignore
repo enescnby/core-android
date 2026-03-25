@@ -35,3 +35,7 @@ Icon
 Thumbs.db
 ehthumbs.db
 desktop.ini
+
+app/google-services.json
+.kotlin/
+*.log

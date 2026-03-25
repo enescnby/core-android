@@ -9,7 +9,8 @@ import com.shade.app.domain.repository.AuthRepository
 
 class AuthRepositoryImpl(
     private val authService: AuthService
-): AuthRepository {
+) : AuthRepository {
+
     override suspend fun register(
         identityPublicKey: String,
         encryptedIdentityPrivateKey: String,
