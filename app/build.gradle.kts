@@ -8,6 +8,7 @@ plugins {
     id("com.google.devtools.ksp") version "2.1.0-1.0.29"
     alias(libs.plugins.hilt)
     alias(libs.plugins.protobuf)
+    id("com.google.gms.google-services")
 }
 
 val localProperties = Properties()
@@ -121,4 +122,8 @@ dependencies {
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
     implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
+}
+
+    implementation(platform("com.google.firebase:firebase-bom:33.10.0"))
+    implementation("com.google.firebase:firebase-messaging")
 }

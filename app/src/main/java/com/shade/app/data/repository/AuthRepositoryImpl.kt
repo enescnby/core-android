@@ -15,7 +15,8 @@ import javax.inject.Singleton
 @Singleton
 class AuthRepositoryImpl @Inject constructor(
     private val authService: AuthService
-): AuthRepository {
+) : AuthRepository {
+
     override suspend fun register(
         identityPublicKey: String,
         encryptedIdentityPrivateKey: String,
