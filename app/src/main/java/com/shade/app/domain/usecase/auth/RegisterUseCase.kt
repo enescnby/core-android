@@ -1,7 +1,8 @@
-package com.shade.app.domain.usecase
+package com.shade.app.domain.usecase.auth
 
 import com.shade.app.crypto.AuthCryptoManager
 import com.shade.app.crypto.MessageCryptoManager
+import com.shade.app.domain.model.AuthResult
 import com.shade.app.domain.repository.AuthRepository
 import com.shade.app.security.KeyVaultManager
 import org.bouncycastle.util.encoders.Hex
@@ -14,7 +15,7 @@ class RegisterUseCase @Inject constructor(
     private val messageCrypto: MessageCryptoManager,
     private val keyVaultManager: KeyVaultManager
 ) {
-    suspend operator fun invoke(mnemonic: List<String>, deviceModel: String, fcmToken: String): Result<String> {
+    suspend operator fun invoke(mnemonic: List<String>, deviceModel: String, fcmToken: String): Result<AuthResult> {
         return try {
             val (idPub, idPriv) = authCrypto.generateEd25519KeyPairHex()
             val (encPub, encPriv) = messageCrypto.generateX25519KeyPairHex()

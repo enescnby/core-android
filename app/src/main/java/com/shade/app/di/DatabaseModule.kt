@@ -26,7 +26,7 @@ object DatabaseModule {
                 context,
                 ShadeDatabase::class.java,
                 "shade_database"
-            ).fallbackToDestructiveMigration(false)
+            ).fallbackToDestructiveMigration()
             .build()
     }
 

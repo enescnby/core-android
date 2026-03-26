@@ -19,9 +19,17 @@ interface ContactDao {
     @Query("SELECT * FROM contacts WHERE shadeId = :shadeId LIMIT 1")
     suspend fun getContactByShadeId(shadeId: String): ContactEntity?
 
+    @Query("SELECT * FROM contacts WHERE shadeId = :shadeId LIMIT 1")
+    fun observeContactByShadeId(shadeId: String): Flow<ContactEntity?>
+
+    @Query("SELECT * FROM contacts WHERE userId = :userId LIMIT 1")
+    suspend fun getContactByUserId(userId: String): ContactEntity?
+
     @Query("SELECT * FROM contacts WHERE savedName LIKE '%' || :query || '%'")
     fun searchContacts(query: String): Flow<List<ContactEntity>>
 
+    @Query("UPDATE contacts SET savedName = :newName WHERE shadeId = :shadeId")
+    suspend fun updateNameByShadeId(shadeId: String, newName: String)
     @Delete
     suspend fun deleteContact(contact: ContactEntity)
 }

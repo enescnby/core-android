@@ -10,7 +10,6 @@ data class ContactEntity(
 
     val shadeId: String,
 
-    val identityPublicKey: String,
     val encryptionPublicKey: String,
 
     val savedName: String?,

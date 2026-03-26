@@ -1,8 +1,8 @@
-package com.shade.app.domain.usecase
+package com.shade.app.domain.usecase.auth
 
 import com.shade.app.crypto.AuthCryptoManager
+import com.shade.app.domain.model.AuthResult
 import com.shade.app.domain.repository.AuthRepository
-import com.shade.app.security.KeyVaultManager
 import javax.inject.Inject
 
 class LoginUseCase @Inject constructor(
@@ -14,7 +14,7 @@ class LoginUseCase @Inject constructor(
         mnemonic: List<String>,
         deviceModel: String,
         fcmToken: String
-    ): Result<String> {
+    ): Result<AuthResult> {
         return try {
             val initResult = repository.loginInit(shadeId)
             val loginData = initResult.getOrThrow()
