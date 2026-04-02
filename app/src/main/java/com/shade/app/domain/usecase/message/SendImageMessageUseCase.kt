@@ -105,7 +105,7 @@ class SendImageMessageUseCase @Inject constructor(
             )
 
             messageRepository.insertMessage(entity)
-            chatRepository.updateChatWithNewMessage(
+            chatRepository.updateLastMessage(
                 chatId = receiverShadeId,
                 lastMessage = "\uD83D\uDCF7 Fotoğraf",
                 timestamp = ts

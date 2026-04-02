@@ -13,7 +13,9 @@ import com.shade.app.domain.repository.MessageRepository
 import com.shade.app.proto.EncryptedPayload
 import com.shade.app.proto.MessageType
 import com.shade.app.security.KeyVaultManager
+import com.shade.app.util.ActiveChatTracker
 import com.shade.app.util.ImageFileManager
+import com.shade.app.util.NotificationHelper
 import org.bouncycastle.util.encoders.Hex
 import javax.inject.Inject
 
@@ -24,11 +26,13 @@ class ReceiveMessageUseCase @Inject constructor(
     private val cryptoManager: MessageCryptoManager,
     private val keyVaultManager: KeyVaultManager,
     private val sendReceiptUseCase: SendReceiptUseCase,
-    private val imageFileManager: ImageFileManager
+    private val imageFileManager: ImageFileManager,
+    private val notificationHelper: NotificationHelper,
+    private val activeChatTracker: ActiveChatTracker
 ) {
     private val gson = Gson()
 
-    suspend operator fun invoke(payload: EncryptedPayload) {
+    suspend operator fun invoke(payload: EncryptedPayload, sendReceipt: Boolean = true) {
         try {
             val contact = contactRepository.getOrFetchContact(payload.senderShadeId) ?: return
             val myPrivateKeyHex = keyVaultManager.getX25519PrivateKey() ?: return
@@ -87,9 +91,21 @@ class ReceiveMessageUseCase @Inject constructor(
             messageRepository.insertMessage(entity)
 
             val lastMessageText = if (payload.type == MessageType.IMAGE) "\uD83D\uDCF7 Fotoğraf" else decryptedText
-            chatRepository.updateChatWithNewMessage(contact.shadeId, lastMessageText, payload.timestamp)
+            if (activeChatTracker.activeShadeId == contact.shadeId) {
+                chatRepository.updateLastMessage(contact.shadeId, lastMessageText, payload.timestamp)
+            } else {
+                chatRepository.updateChatWithNewMessage(contact.shadeId, lastMessageText, payload.timestamp)
+            }
 
-            sendReceiptUseCase(payload.messageId, contact.shadeId, MessageStatus.DELIVERED)
+            if (sendReceipt) {
+                sendReceiptUseCase(payload.messageId, contact.shadeId, MessageStatus.DELIVERED)
+            }
+
+            if (activeChatTracker.activeShadeId != contact.shadeId) {
+                val displayName = contact.savedName ?: contact.shadeId
+                val notifText = if (payload.type == MessageType.IMAGE) "\uD83D\uDCF7 Fotoğraf" else decryptedText
+                notificationHelper.showMessageNotification(displayName, notifText, contact.shadeId)
+            }
         } catch (e: Exception) {
             Log.e("ReceiveMessage", "Exception in ReceiveMessageUseCase: ${e.message}")
         }

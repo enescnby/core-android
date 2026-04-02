@@ -3,6 +3,7 @@ package com.shade.app.di
 import com.shade.app.BuildConfig
 import com.shade.app.data.remote.api.AuthService
 import com.shade.app.data.remote.api.MediaService
+import com.shade.app.data.remote.api.MessageService
 import com.shade.app.data.remote.api.UserService
 import com.shade.app.data.remote.websocket.ShadeWebSocketManager
 import com.shade.app.data.remote.websocket.ShadeWebSocketManagerImpl
@@ -61,5 +62,11 @@ object NetworkModule {
     @Singleton
     fun provideMediaService(retrofit: Retrofit): MediaService {
         return retrofit.create(MediaService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideMessageService(retrofit: Retrofit): MessageService {
+        return retrofit.create(MessageService::class.java)
     }
 }

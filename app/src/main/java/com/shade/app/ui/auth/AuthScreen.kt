@@ -10,7 +10,6 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -25,7 +24,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.Image
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -77,10 +75,10 @@ fun AuthScreen(
         AuthScreenContent(
             uiState = uiState,
             onLogin = { shadeId, mnemonic ->
-                viewModel.login(shadeId, mnemonic, "Android Device", "dummy_fcm")
+                viewModel.login(shadeId, mnemonic, "Android Device")
             },
             onRegister = {
-                viewModel.register("Android Device", "dummy_fcm")
+                viewModel.register("Android Device")
             },
             onResetUiState = {
                 viewModel.resetUiState()

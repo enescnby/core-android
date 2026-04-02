@@ -15,6 +15,8 @@ import com.shade.app.domain.usecase.message.MarkChatAsReadUseCase
 import com.shade.app.domain.usecase.message.SendImageMessageUseCase
 import com.shade.app.domain.usecase.message.SendMessageUseCase
 import com.shade.app.security.KeyVaultManager
+import com.shade.app.util.ActiveChatTracker
+import com.shade.app.util.NotificationHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -40,6 +42,8 @@ class ChatViewModel @Inject constructor(
     private val markChatAsReadUseCase: MarkChatAsReadUseCase,
     private val chatRepository: ChatRepository,
     private val keyVaultManager: KeyVaultManager,
+    private val activeChatTracker: ActiveChatTracker,
+    private val notificationHelper: NotificationHelper,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -56,9 +60,17 @@ class ChatViewModel @Inject constructor(
     val uiState: StateFlow<ChatUiState> = _uiState.asStateFlow()
 
     private var hasCalculatedInitialScroll = false
+
     init {
+        activeChatTracker.setActive(chatId)
+        notificationHelper.clearNotifications(chatId)
         observeMessages()
         observeChatDetails()
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        activeChatTracker.clear()
     }
 
     private fun observeMessages() {
@@ -85,7 +97,10 @@ class ChatViewModel @Inject constructor(
 
                 _uiState.update { it.copy(messages = messages) }
 
-                if (messages.isNotEmpty() && messages.last().senderId != keyVaultManager.getShadeId()) {
+                val hasUnread = messages.any {
+                    it.senderId != myId && it.status != MessageStatus.READ
+                }
+                if (hasUnread) {
                     markChatAsReadUseCase(chatId)
                 }
             }
