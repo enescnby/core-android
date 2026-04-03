@@ -1,5 +1,6 @@
 package com.shade.app.di
 
+import android.content.Context
 import com.shade.app.BuildConfig
 import com.shade.app.data.remote.api.AuthService
 import com.shade.app.data.remote.api.MediaService
@@ -7,9 +8,12 @@ import com.shade.app.data.remote.api.MessageService
 import com.shade.app.data.remote.api.UserService
 import com.shade.app.data.remote.websocket.ShadeWebSocketManager
 import com.shade.app.data.remote.websocket.ShadeWebSocketManagerImpl
+import com.shade.app.util.ConnectivityObserver
+import com.shade.app.util.NetworkConnectivityObserver
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
@@ -68,5 +72,11 @@ object NetworkModule {
     @Singleton
     fun provideMessageService(retrofit: Retrofit): MessageService {
         return retrofit.create(MessageService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideConnectivityObserver(@ApplicationContext context: Context): ConnectivityObserver {
+        return NetworkConnectivityObserver(context)
     }
 }

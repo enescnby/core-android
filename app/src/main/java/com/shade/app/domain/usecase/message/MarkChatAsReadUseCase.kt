@@ -18,13 +18,15 @@ class MarkChatAsReadUseCase @Inject constructor(
             return
         }
 
-        val messageIds = unreadMessages.map { it.messageId }
-
-        messageIds.forEach { messageId ->
-            messageRepository.updateMessageStatus(messageId, MessageStatus.READ)
+        unreadMessages.forEach { msg ->
+            messageRepository.updateMessageStatus(msg.messageId, MessageStatus.READ)
         }
 
-        sendReceiptUseCase.sendBatchReadReceipts(messageIds)
+        for (msg in unreadMessages) {
+            sendReceiptUseCase(msg.messageId, chatId, MessageStatus.READ)
+        }
+
+        sendReceiptUseCase.sendBatchReadReceipts(unreadMessages.map { it.messageId })
 
         chatRepository.resetUnreadCount(chatId)
     }
