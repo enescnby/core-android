@@ -13,12 +13,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.shade.app.data.local.entities.ChatEntity
 import com.shade.app.data.local.model.ChatWithContact
 import java.text.SimpleDateFormat
 import java.util.*
@@ -34,95 +32,18 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val lookupState by viewModel.lookupState.collectAsState()
     val loggedOut by viewModel.loggedOut.collectAsState()
-
-    LaunchedEffect(loggedOut) {
-        if (loggedOut) onLogout()
-    }
-
-    var showLookupDialog by remember { mutableStateOf(false) }
-    var shadeIdInput by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
         Log.d(TAG, "HomeScreen açıldı")
     }
 
+    LaunchedEffect(loggedOut) {
+        if (loggedOut) onLogout()
+    }
+
     DisposableEffect(Unit) {
-        onDispose {
-            Log.d(TAG, "HomeScreen kapandı")
-        }
-    }
-
-    LaunchedEffect(lookupState) {
-        if (lookupState is LookupUiState.Success) {
-            showLookupDialog = false
-            shadeIdInput = ""
-            viewModel.resetLookupState()
-        }
-    }
-
-    if (showLookupDialog) {
-        AlertDialog(
-            onDismissRequest = {
-                Log.d(TAG, "Yeni mesaj dialogu kapatıldı")
-                viewModel.resetLookupState()
-            },
-            title = { Text("Yeni Mesaj") },
-            text = {
-                Column {
-                    Text(
-                        text = "Mesaj göndermek istediğin kişinin Shade ID'sini gir kanka.",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    OutlinedTextField(
-                        value = shadeIdInput,
-                        onValueChange = { shadeIdInput = it },
-                        label = { Text("Shade ID") },
-                        placeholder = { Text("Örn: CG-####-####") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        isError = lookupState is LookupUiState.Error
-                    )
-                    if (lookupState is LookupUiState.Error) {
-                        Text(
-                            text = (lookupState as LookupUiState.Error).message.asString(),
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.padding(top = 4.dp)
-                        )
-                    }
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        Log.d(TAG, "Ara ve Başlat butonuna tıklandı: $shadeIdInput")
-                        viewModel.startLookup(shadeIdInput, onChatClick)
-                    },
-                    enabled = shadeIdInput.isNotBlank() && lookupState !is LookupUiState.Loading
-                ) {
-                    if (lookupState is LookupUiState.Loading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(20.dp),
-                            strokeWidth = 2.dp,
-                            color = Color.White
-                        )
-                    } else {
-                        Text("Ara ve Başlat")
-                    }
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = {
-                    Log.d(TAG, "Yeni mesaj dialogu İptal ile kapatıldı")
-                    showLookupDialog = false
-                }) {
-                    Text("İptal")
-                }
-            }
-        )
+        onDispose { Log.d(TAG, "HomeScreen kapandı") }
     }
 
     Scaffold(
@@ -131,30 +52,24 @@ fun HomeScreen(
                 title = { Text("Shade") },
                 actions = {
                     IconButton(onClick = {
-                        Log.d(TAG, "Kişiler butonuna tıklandı → Contacts ekranına geçiliyor")
+                        Log.d(TAG, "Kişiler butonuna tıklandı")
                         onNavigateToContacts()
                     }) {
-                        Icon(
-                            imageVector = Icons.Default.People,
-                            contentDescription = "Kişiler"
-                        )
+                        Icon(Icons.Default.People, contentDescription = "Kişiler")
                     }
                     IconButton(onClick = {
                         Log.d(TAG, "Çıkış butonuna tıklandı")
                         viewModel.logout()
                     }) {
-                        Icon(
-                            imageVector = Icons.Default.ExitToApp,
-                            contentDescription = "Çıkış Yap"
-                        )
+                        Icon(Icons.Default.ExitToApp, contentDescription = "Çıkış Yap")
                     }
                 }
             )
         },
         floatingActionButton = {
             FloatingActionButton(onClick = {
-                Log.d(TAG, "Yeni mesaj FAB tıklandı → dialog açılıyor")
-                showLookupDialog = true
+                Log.d(TAG, "Yeni mesaj FAB tıklandı → Kişiler ekranına geçiliyor")
+                onNavigateToContacts()
             }) {
                 Icon(Icons.AutoMirrored.Filled.Chat, contentDescription = "Yeni Mesaj")
             }
@@ -179,11 +94,11 @@ fun HomeScreen(
                         ChatItem(
                             chat = chat,
                             onClick = {
-                                Log.d(TAG, "Sohbete tıklandı: chatId=${chat.chat.chatId}, name=${chat.displayName}")
+                                Log.d(TAG, "Sohbete tıklandı: ${chat.chat.chatId}")
                                 onChatClick(chat.chat.chatId, chat.displayName)
                             },
                             onDelete = {
-                                Log.d(TAG, "Sohbet silme: chatId=${chat.chat.chatId}")
+                                Log.d(TAG, "Sohbet silme: ${chat.chat.chatId}")
                                 viewModel.deleteChat(chat)
                             }
                         )
@@ -201,9 +116,7 @@ fun HomeScreen(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .padding(16.dp)
-                ) {
-                    Text(error)
-                }
+                ) { Text(error) }
             }
         }
     }
@@ -266,7 +179,6 @@ fun ChatItem(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f)
                 )
-
                 if (chat.chat.unreadCount > 0) {
                     Badge(
                         containerColor = MaterialTheme.colorScheme.primary,

@@ -8,11 +8,13 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -28,15 +30,86 @@ fun ContactsScreen(
     viewModel: ContactsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val lookupState by viewModel.lookupState.collectAsState()
+
+    var showAddDialog by remember { mutableStateOf(false) }
+    var shadeIdInput by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
         Log.d(TAG, "ContactsScreen açıldı")
     }
 
-    DisposableEffect(Unit) {
-        onDispose {
-            Log.d(TAG, "ContactsScreen kapandı")
+    LaunchedEffect(lookupState) {
+        if (lookupState is ContactLookupState.Success) {
+            showAddDialog = false
+            shadeIdInput = ""
+            viewModel.resetLookupState()
         }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose { Log.d(TAG, "ContactsScreen kapandı") }
+    }
+
+    if (showAddDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                showAddDialog = false
+                viewModel.resetLookupState()
+            },
+            title = { Text("Yeni Kişi Ekle") },
+            text = {
+                Column {
+                    Text(
+                        text = "Eklemek istediğin kişinin Shade ID'sini gir.",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    OutlinedTextField(
+                        value = shadeIdInput,
+                        onValueChange = { shadeIdInput = it },
+                        label = { Text("Shade ID") },
+                        placeholder = { Text("Örn: CG-####-####") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        isError = lookupState is ContactLookupState.Error
+                    )
+                    if (lookupState is ContactLookupState.Error) {
+                        Text(
+                            text = (lookupState as ContactLookupState.Error).message.asString(),
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        Log.d(TAG, "Kişi aranıyor: $shadeIdInput")
+                        viewModel.startLookup(shadeIdInput, onContactClick)
+                    },
+                    enabled = shadeIdInput.isNotBlank() && lookupState !is ContactLookupState.Loading
+                ) {
+                    if (lookupState is ContactLookupState.Loading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            strokeWidth = 2.dp,
+                            color = Color.White
+                        )
+                    } else {
+                        Text("Ekle ve Mesaj Gönder")
+                    }
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showAddDialog = false
+                    viewModel.resetLookupState()
+                }) { Text("İptal") }
+            }
+        )
     }
 
     Scaffold(
@@ -52,6 +125,14 @@ fun ContactsScreen(
                     }
                 }
             )
+        },
+        floatingActionButton = {
+            FloatingActionButton(onClick = {
+                Log.d(TAG, "Yeni kişi ekleme FAB tıklandı")
+                showAddDialog = true
+            }) {
+                Icon(Icons.Default.PersonAdd, contentDescription = "Kişi Ekle")
+            }
         }
     ) { paddingValues ->
         Column(
@@ -66,9 +147,7 @@ fun ContactsScreen(
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 placeholder = { Text("Kişi ara...") },
-                leadingIcon = {
-                    Icon(Icons.Default.Search, contentDescription = null)
-                },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                 singleLine = true,
                 shape = MaterialTheme.shapes.medium
             )
@@ -79,11 +158,21 @@ fun ContactsScreen(
                 }
             } else if (uiState.contacts.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(
-                        text = if (uiState.searchQuery.isBlank()) "Henüz hiç kişin yok."
-                        else "Kişi bulunamadı.",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = if (uiState.searchQuery.isBlank()) "Henüz hiç kişin yok."
+                            else "Kişi bulunamadı.",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        if (uiState.searchQuery.isBlank()) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Sağ alttaki + butonuna bas ve Shade ID gir.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
                 }
             } else {
                 LazyColumn(modifier = Modifier.fillMaxSize()) {
@@ -92,7 +181,7 @@ fun ContactsScreen(
                             contact = contact,
                             onClick = {
                                 val displayName = contact.savedName ?: contact.shadeId
-                                Log.d(TAG, "Kişiye tıklandı: ${contact.shadeId} ($displayName) → Chat açılıyor")
+                                Log.d(TAG, "Kişiye tıklandı: ${contact.shadeId} → Chat açılıyor")
                                 onContactClick(contact.shadeId, displayName)
                             },
                             onDelete = {
@@ -133,10 +222,7 @@ fun ContactItem(
                 }) { Text("Sil", color = MaterialTheme.colorScheme.error) }
             },
             dismissButton = {
-                TextButton(onClick = {
-                    Log.d("SHADE_CONTACTS", "Silme dialogu iptal edildi: $displayName")
-                    showDeleteDialog = false
-                }) { Text("İptal") }
+                TextButton(onClick = { showDeleteDialog = false }) { Text("İptal") }
             }
         )
     }
@@ -175,10 +261,7 @@ fun ContactItem(
             )
         }
 
-        IconButton(onClick = {
-            Log.d("SHADE_CONTACTS", "Silme ikonu tıklandı: $displayName")
-            showDeleteDialog = true
-        }) {
+        IconButton(onClick = { showDeleteDialog = true }) {
             Icon(
                 Icons.Default.Delete,
                 contentDescription = "Sil",

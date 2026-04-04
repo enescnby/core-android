@@ -3,8 +3,10 @@ package com.shade.app.ui.contacts
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.shade.app.R
 import com.shade.app.data.local.entities.ContactEntity
 import com.shade.app.domain.repository.ContactRepository
+import com.shade.app.ui.util.UiText
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -15,6 +17,13 @@ data class ContactsUiState(
     val isLoading: Boolean = false,
     val searchQuery: String = ""
 )
+
+sealed class ContactLookupState {
+    object Idle : ContactLookupState()
+    object Loading : ContactLookupState()
+    object Success : ContactLookupState()
+    data class Error(val message: UiText) : ContactLookupState()
+}
 
 @HiltViewModel
 class ContactsViewModel @Inject constructor(
@@ -27,6 +36,9 @@ class ContactsViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(ContactsUiState())
     val uiState: StateFlow<ContactsUiState> = _uiState.asStateFlow()
+
+    private val _lookupState = MutableStateFlow<ContactLookupState>(ContactLookupState.Idle)
+    val lookupState: StateFlow<ContactLookupState> = _lookupState.asStateFlow()
 
     init {
         Log.d(TAG, "ContactsViewModel başlatıldı")
@@ -59,11 +71,29 @@ class ContactsViewModel @Inject constructor(
                     Log.d(TAG, "Arama sonucu: ${contacts.size} kişi ('$query')")
                     _uiState.update { it.copy(contacts = contacts) }
                 }
-                .catch { e ->
-                    Log.e(TAG, "Arama hatası: ${e.message}")
-                }
+                .catch { e -> Log.e(TAG, "Arama hatası: ${e.message}") }
                 .launchIn(viewModelScope)
         }
+    }
+
+    fun startLookup(shadeId: String, onNavigateToChat: (String, String) -> Unit) {
+        Log.d(TAG, "Kişi aranıyor backend'den: $shadeId")
+        viewModelScope.launch {
+            _lookupState.value = ContactLookupState.Loading
+            val contact = contactRepository.getOrFetchContact(shadeId)
+            if (contact != null) {
+                Log.d(TAG, "Kişi bulundu: $shadeId → chat başlatılıyor")
+                _lookupState.value = ContactLookupState.Success
+                onNavigateToChat(contact.shadeId, contact.savedName ?: contact.shadeId)
+            } else {
+                Log.w(TAG, "Kişi bulunamadı: $shadeId")
+                _lookupState.value = ContactLookupState.Error(UiText.StringResource(R.string.user_not_found))
+            }
+        }
+    }
+
+    fun resetLookupState() {
+        _lookupState.value = ContactLookupState.Idle
     }
 
     fun deleteContact(contact: ContactEntity) {
