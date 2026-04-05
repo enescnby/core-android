@@ -646,7 +646,48 @@ fun SuccessSection(state: AuthUiState.Success, snackbarHostState: SnackbarHostSt
                 textAlign = TextAlign.Center,
                 fontWeight = FontWeight.Bold
             )
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Tek tıkla tümünü kopyala butonu
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        val textToCopy = state.mnemonic.joinToString(" ")
+                        scope.launch {
+                            val clipData = ClipData.newPlainText("mnemonic", textToCopy)
+                            clipboard.setClipEntry(ClipEntry(clipData))
+                            snackbarHostState.showSnackbar("12 kelime kopyalandı ✓")
+                        }
+                    },
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                shape = RoundedCornerShape(14.dp),
+                border = androidx.compose.foundation.BorderStroke(
+                    1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)
+                )
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ContentCopy,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Tüm Kelimeleri Kopyala",
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
 
             LazyVerticalGrid(
                 columns = GridCells.Fixed(3),
@@ -674,23 +715,6 @@ fun SuccessSection(state: AuthUiState.Success, snackbarHostState: SnackbarHostSt
                 }
             }
             
-            Spacer(modifier = Modifier.height(24.dp))
-            
-            Button(
-                onClick = {
-                    val textToCopy = state.mnemonic.joinToString(" ")
-                    scope.launch {
-                        val clipData = ClipData.newPlainText("mnemonic", textToCopy)
-                        clipboard.setClipEntry(ClipEntry(clipData))
-                        snackbarHostState.showSnackbar(context.getString(R.string.mnemonic_copied))
-                    }
-                },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary),
-                shape = RoundedCornerShape(16.dp)
-            ) {
-                Text(stringResource(R.string.copy_mnemonic), color = Color.White)
-            }
         }
     }
 }
