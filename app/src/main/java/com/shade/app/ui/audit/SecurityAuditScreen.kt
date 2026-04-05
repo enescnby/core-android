@@ -136,11 +136,31 @@ fun SecurityAuditScreen(
 
 @Composable
 fun AuditLogCard(log: AuditLogItem) {
-    val (icon, iconColor, label) = when (log.actionType) {
-        "LOGIN_SUCCESS" -> Triple(Icons.Default.LockOpen, Color(0xFF4CAF50), "Başarılı Giriş")
-        "LOGIN_FAILED_INVALID_SIGNATURE" -> Triple(Icons.Default.Warning, Color(0xFFE53935), "Başarısız Giriş Denemesi")
-        "USER_REGISTERED" -> Triple(Icons.Default.PersonAdd, MaterialTheme.colorScheme.primary, "Hesap Oluşturuldu")
-        else -> Triple(Icons.Default.DeviceUnknown, Color.Gray, log.actionType)
+    val icon: ImageVector
+    val iconColor: Color
+    val label: String
+
+    when (log.actionType) {
+        "LOGIN_SUCCESS" -> {
+            icon = Icons.Default.LockOpen
+            iconColor = Color(0xFF4CAF50)
+            label = "Başarılı Giriş"
+        }
+        "LOGIN_FAILED_INVALID_SIGNATURE" -> {
+            icon = Icons.Default.Warning
+            iconColor = Color(0xFFE53935)
+            label = "Başarısız Giriş Denemesi"
+        }
+        "USER_REGISTERED" -> {
+            icon = Icons.Default.PersonAdd
+            iconColor = Color(0xFF7C4DFF)
+            label = "Hesap Oluşturuldu"
+        }
+        else -> {
+            icon = Icons.Default.DeviceUnknown
+            iconColor = Color.Gray
+            label = log.actionType
+        }
     }
 
     val formattedTime = try {
@@ -170,7 +190,7 @@ fun AuditLogCard(log: AuditLogItem) {
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
-                        imageVector = icon as ImageVector,
+                        imageVector = icon,
                         contentDescription = null,
                         tint = iconColor,
                         modifier = Modifier.size(22.dp)

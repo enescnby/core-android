@@ -131,12 +131,12 @@ fun ChatScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Arama sonuçları
             if (uiState.isSearchActive && uiState.searchQuery.isNotBlank()) {
+                // Arama modu: sonuçları göster
                 if (uiState.searchResults.isEmpty()) {
                     Box(
                         modifier = Modifier
-                            .fillMaxWidth()
+                            .fillMaxSize()
                             .padding(16.dp),
                         contentAlignment = Alignment.Center
                     ) {
@@ -158,64 +158,64 @@ fun ChatScreen(
                             MessageItem(message = message, isMe = message.senderId == uiState.myShadeId)
                         }
                     }
-                    return@Scaffold
                 }
-                return@Scaffold
-            }
+            } else {
+                // Normal mesaj listesi
+                val reversedMessages = remember(uiState.messages) { uiState.messages.reversed() }
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth(),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    reverseLayout = true
+                ) {
+                    items(
+                        items = reversedMessages,
+                        key = { it.messageId }
+                    ) { message ->
+                        MessageItem(
+                            message = message,
+                            isMe = message.senderId == uiState.myShadeId
+                        )
 
-            val reversedMessages = remember(uiState.messages) { uiState.messages.reversed() }
-            LazyColumn(
-                state = listState,
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth(),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                reverseLayout = true
-            ) {
-                items(
-                    items = reversedMessages,
-                    key = { it.messageId }
-                ) { message ->
-                    MessageItem(
-                        message = message,
-                        isMe = message.senderId == uiState.myShadeId
-                    )
-
-                    if (message.messageId == uiState.firstUnreadMessageId) {
-                        UnreadMessagesHeader()
+                        if (message.messageId == uiState.firstUnreadMessageId) {
+                            UnreadMessagesHeader()
+                        }
                     }
                 }
-            }
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                OutlinedTextField(
-                    value = messageText,
-                    onValueChange = { messageText = it },
-                    modifier = Modifier.weight(1f),
-                    placeholder = { Text("Mesaj yaz...") },
-                    shape = RoundedCornerShape(24.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                IconButton(
-                    onClick = {
-                        viewModel.sendMessage(messageText)
-                        messageText = ""
-                    },
-                    enabled = messageText.isNotBlank()
+                // Mesaj yazma alanı
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        Icons.AutoMirrored.Filled.Send,
-                        contentDescription = "Gönder",
-                        tint = MaterialTheme.colorScheme.primary
+                    OutlinedTextField(
+                        value = messageText,
+                        onValueChange = { messageText = it },
+                        modifier = Modifier.weight(1f),
+                        placeholder = { Text("Mesaj yaz...") },
+                        shape = RoundedCornerShape(24.dp)
                     )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    IconButton(
+                        onClick = {
+                            viewModel.sendMessage(messageText)
+                            messageText = ""
+                        },
+                        enabled = messageText.isNotBlank()
+                    ) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.Send,
+                            contentDescription = "Gönder",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
                 }
-            }
+            } // else sonu
         }
     }
 }
