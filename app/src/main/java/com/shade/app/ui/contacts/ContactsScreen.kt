@@ -7,7 +7,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
@@ -180,13 +182,19 @@ fun ContactsScreen(
                         ContactItem(
                             contact = contact,
                             onClick = {
-                                val displayName = contact.savedName ?: contact.shadeId
-                                Log.d(TAG, "Kişiye tıklandı: ${contact.shadeId} → Chat açılıyor")
-                                onContactClick(contact.shadeId, displayName)
+                                if (!contact.isBlocked) {
+                                    val displayName = contact.savedName ?: contact.shadeId
+                                    Log.d(TAG, "Kişiye tıklandı: ${contact.shadeId} → Chat açılıyor")
+                                    onContactClick(contact.shadeId, displayName)
+                                }
                             },
                             onDelete = {
                                 Log.d(TAG, "Kişi silme isteği: ${contact.shadeId}")
                                 viewModel.deleteContact(contact)
+                            },
+                            onToggleBlock = {
+                                Log.d(TAG, "Engel toggle: ${contact.shadeId}")
+                                viewModel.toggleBlock(contact)
                             }
                         )
                         HorizontalDivider(
@@ -205,9 +213,11 @@ fun ContactsScreen(
 fun ContactItem(
     contact: ContactEntity,
     onClick: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onToggleBlock: () -> Unit
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var showBlockDialog by remember { mutableStateOf(false) }
     val displayName = contact.savedName ?: contact.shadeId
 
     if (showDeleteDialog) {
@@ -227,6 +237,37 @@ fun ContactItem(
         )
     }
 
+    if (showBlockDialog) {
+        AlertDialog(
+            onDismissRequest = { showBlockDialog = false },
+            title = { Text(if (contact.isBlocked) "Engeli Kaldır" else "Kişiyi Engelle") },
+            text = {
+                Text(
+                    if (contact.isBlocked)
+                        "$displayName kişisinin engelini kaldırmak istiyor musun?"
+                    else
+                        "$displayName kişisini engellemek istiyor musun? Engellenince mesaj gönderemezsin."
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    onToggleBlock()
+                    showBlockDialog = false
+                }) {
+                    Text(
+                        if (contact.isBlocked) "Engeli Kaldır"
+                        else "Engelle",
+                        color = if (contact.isBlocked) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.error
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showBlockDialog = false }) { Text("İptal") }
+            }
+        )
+    }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -237,12 +278,19 @@ fun ContactItem(
         Surface(
             modifier = Modifier.size(50.dp),
             shape = MaterialTheme.shapes.medium,
-            color = MaterialTheme.colorScheme.primaryContainer
+            color = if (contact.isBlocked)
+                MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f)
+            else
+                MaterialTheme.colorScheme.primaryContainer
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Text(
                     text = displayName.take(1).uppercase(),
-                    style = MaterialTheme.typography.titleMedium
+                    style = MaterialTheme.typography.titleMedium,
+                    color = if (contact.isBlocked)
+                        MaterialTheme.colorScheme.onErrorContainer
+                    else
+                        MaterialTheme.colorScheme.onPrimaryContainer
                 )
             }
         }
@@ -252,12 +300,31 @@ fun ContactItem(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = displayName,
-                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold)
+                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+                color = if (contact.isBlocked)
+                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                else
+                    MaterialTheme.colorScheme.onSurface
             )
             Text(
-                text = contact.shadeId,
+                text = if (contact.isBlocked) "Engellendi • ${contact.shadeId}"
+                else contact.shadeId,
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = if (contact.isBlocked)
+                    MaterialTheme.colorScheme.error.copy(alpha = 0.7f)
+                else
+                    MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        IconButton(onClick = { showBlockDialog = true }) {
+            Icon(
+                if (contact.isBlocked) Icons.Default.LockOpen else Icons.Default.Block,
+                contentDescription = if (contact.isBlocked) "Engeli Kaldır" else "Engelle",
+                tint = if (contact.isBlocked)
+                    MaterialTheme.colorScheme.primary
+                else
+                    MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
 

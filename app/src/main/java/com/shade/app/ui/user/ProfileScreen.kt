@@ -17,6 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.Security
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -50,7 +51,8 @@ import kotlinx.coroutines.flow.collectLatest
 @Composable
 fun ProfileScreen(
     viewModel: ProfileViewModel = hiltViewModel(),
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    onSecurityAuditClick: () -> Unit = {}
 ) {
     val contact by viewModel.contactState.collectAsState()
     var nameText by remember(contact) { mutableStateOf(contact?.savedName ?: "") }
@@ -121,6 +123,20 @@ fun ProfileScreen(
             )
 
             Spacer(modifier = Modifier.weight(1f))
+
+            OutlinedButton(
+                onClick = onSecurityAuditClick,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Icon(Icons.Default.Security, contentDescription = null)
+                Spacer(Modifier.width(8.dp))
+                Text("Hesap Etkinliğini Gör", fontSize = 15.sp)
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
 
             Button(
                 onClick = {

@@ -64,4 +64,8 @@ class ContactRepositoryImpl @Inject constructor(
     override suspend fun deleteContact(contact: ContactEntity) {
         contactDao.deleteContact(contact)
     }
+
+    override suspend fun setBlocked(userId: String, isBlocked: Boolean) {
+        contactDao.setBlocked(userId, isBlocked)
+    }
 }

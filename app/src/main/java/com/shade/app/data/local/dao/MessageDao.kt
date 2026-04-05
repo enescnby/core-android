@@ -23,6 +23,9 @@ interface MessageDao{
     @Query("UPDATE messages SET status = :status WHERE messageId = :messageId")
     suspend fun updateMessageStatus(messageId: String, status: MessageStatus)
 
+    @Query("SELECT * FROM messages WHERE (senderId = :chatId OR receiverId = :chatId) AND content LIKE '%' || :query || '%' ORDER BY timestamp DESC")
+    fun searchMessages(chatId: String, query: String): Flow<List<MessageEntity>>
+
     @Delete
     suspend fun deleteMessage(message: MessageEntity)
 }

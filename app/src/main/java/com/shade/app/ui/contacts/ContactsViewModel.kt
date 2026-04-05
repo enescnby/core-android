@@ -104,6 +104,15 @@ class ContactsViewModel @Inject constructor(
         }
     }
 
+    fun toggleBlock(contact: ContactEntity) {
+        val newState = !contact.isBlocked
+        Log.d(TAG, "Kişi engel durumu değiştiriliyor: ${contact.shadeId} → isBlocked=$newState")
+        viewModelScope.launch {
+            contactRepository.setBlocked(contact.userId, newState)
+            Log.d(TAG, "Engel durumu güncellendi: ${contact.shadeId}")
+        }
+    }
+
     override fun onCleared() {
         super.onCleared()
         Log.d(TAG, "ContactsViewModel temizlendi")

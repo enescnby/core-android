@@ -1,6 +1,7 @@
 package com.shade.app.di
 
 import com.shade.app.BuildConfig
+import com.shade.app.data.remote.api.AuditService
 import com.shade.app.data.remote.api.AuthService
 import com.shade.app.data.remote.api.UserService
 import com.shade.app.data.remote.websocket.ShadeWebSocketManager
@@ -38,6 +39,12 @@ object NetworkModule {
     @Singleton
     fun provideUserService(retrofit: Retrofit): UserService {
         return retrofit.create(UserService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideAuditService(retrofit: Retrofit): AuditService {
+        return retrofit.create(AuditService::class.java)
     }
 
     @Provides

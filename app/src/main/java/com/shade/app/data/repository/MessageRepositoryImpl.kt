@@ -37,4 +37,7 @@ class MessageRepositoryImpl @Inject constructor(
     }
 
     override suspend fun deleteMessage(message: MessageEntity) = messageDao.deleteMessage(message)
+
+    override fun searchMessages(chatId: String, query: String): Flow<List<MessageEntity>> =
+        messageDao.searchMessages(chatId, query)
 }

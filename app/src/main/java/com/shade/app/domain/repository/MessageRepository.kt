@@ -13,4 +13,5 @@ interface MessageRepository {
     suspend fun sendWebsocketMessage(message: WebSocketMessage): Boolean
     fun observeIncomingMessages(): Flow<WebSocketMessage>
     suspend fun deleteMessage(message: MessageEntity)
+    fun searchMessages(chatId: String, query: String): Flow<List<MessageEntity>>
 }

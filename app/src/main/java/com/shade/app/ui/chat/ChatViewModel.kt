@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.shade.app.data.local.entities.MessageEntity
 import com.shade.app.data.local.entities.MessageStatus
+import com.shade.app.data.remote.api.UserService
 import com.shade.app.domain.repository.ChatRepository
 import com.shade.app.domain.repository.MessageRepository
 import com.shade.app.domain.usecase.message.MarkChatAsReadUseCase
@@ -14,6 +15,13 @@ import com.shade.app.security.KeyVaultManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
 import javax.inject.Inject
 
 data class ChatUiState(
@@ -23,7 +31,13 @@ data class ChatUiState(
     val myShadeId: String = "",
     val initialScrollIndex: Int? = null,
     val firstUnreadMessageId: String? = null,
-    val isSendingImage: Boolean = false
+    val isSendingImage: Boolean = false,
+    // Arama
+    val isSearchActive: Boolean = false,
+    val searchQuery: String = "",
+    val searchResults: List<MessageEntity> = emptyList(),
+    // Son görülme
+    val lastSeenText: String = ""
 )
 
 @HiltViewModel
@@ -33,6 +47,7 @@ class ChatViewModel @Inject constructor(
     private val markChatAsReadUseCase: MarkChatAsReadUseCase,
     private val chatRepository: ChatRepository,
     private val keyVaultManager: KeyVaultManager,
+    private val userService: UserService,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -58,6 +73,7 @@ class ChatViewModel @Inject constructor(
         Log.d(TAG, "ChatViewModel başlatıldı: chatId=$chatId")
         observeMessages()
         observeChatDetails()
+        fetchUserStatus()
     }
 
     private fun observeMessages() {
@@ -102,6 +118,39 @@ class ChatViewModel @Inject constructor(
             .launchIn(viewModelScope)
     }
 
+    private fun fetchUserStatus() {
+        viewModelScope.launch {
+            try {
+                val token = "Bearer ${keyVaultManager.getAccessToken()}"
+                val response = userService.getUserStatus(token, chatId)
+                if (response.isSuccessful) {
+                    val status = response.body() ?: return@launch
+                    val text = when {
+                        status.isOnline -> "Çevrimiçi"
+                        status.lastActive.isNullOrBlank() -> ""
+                        else -> {
+                            val instant = Instant.parse(status.lastActive)
+                            val minutesAgo = ChronoUnit.MINUTES.between(instant, Instant.now())
+                            when {
+                                minutesAgo < 60 -> "Son görülme: $minutesAgo dakika önce"
+                                minutesAgo < 1440 -> "Son görülme: ${minutesAgo / 60} saat önce"
+                                else -> {
+                                    val formatter = DateTimeFormatter.ofPattern("d MMM")
+                                        .withZone(ZoneId.systemDefault())
+                                    "Son görülme: ${formatter.format(instant)}"
+                                }
+                            }
+                        }
+                    }
+                    _uiState.update { it.copy(lastSeenText = text) }
+                    Log.d(TAG, "Son görülme: $text")
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Son görülme alınamadı: ${e.message}")
+            }
+        }
+    }
+
     fun sendMessage(content: String) {
         if (content.isBlank()) return
         Log.d(TAG, "Metin mesajı gönderiliyor → chatId=$chatId")
@@ -113,6 +162,27 @@ class ChatViewModel @Inject constructor(
 
     fun clearUnreadNotification() {
         _uiState.update { it.copy(firstUnreadMessageId = null) }
+    }
+
+    fun toggleSearch() {
+        val nowActive = !_uiState.value.isSearchActive
+        _uiState.update { it.copy(isSearchActive = nowActive, searchQuery = "", searchResults = emptyList()) }
+        Log.d(TAG, "Arama modu: $nowActive")
+    }
+
+    fun onSearchQueryChange(query: String) {
+        _uiState.update { it.copy(searchQuery = query) }
+        if (query.isBlank()) {
+            _uiState.update { it.copy(searchResults = emptyList()) }
+            return
+        }
+        messageRepository.searchMessages(chatId, query)
+            .onEach { results ->
+                Log.d(TAG, "Arama sonucu: ${results.size} mesaj ('$query')")
+                _uiState.update { it.copy(searchResults = results) }
+            }
+            .catch { e -> Log.e(TAG, "Arama hatası: ${e.message}") }
+            .launchIn(viewModelScope)
     }
 
     override fun onCleared() {

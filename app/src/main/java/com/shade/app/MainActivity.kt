@@ -5,6 +5,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -21,6 +22,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.core.content.ContextCompat
 import com.google.firebase.messaging.FirebaseMessaging
+import com.shade.app.ui.audit.SecurityAuditScreen
 import com.shade.app.ui.auth.AuthScreen
 import com.shade.app.ui.chat.ChatScreen
 import com.shade.app.ui.contacts.ContactsScreen
@@ -42,6 +44,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Ekran görüntüsü ve ekran kaydını engelle (gizlilik uygulaması için zorunlu)
+        window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
         Log.d(TAG, "MainActivity onCreate")
 
         askNotificationPermission()
@@ -172,6 +176,20 @@ fun AppNavigation() {
             ProfileScreen(
                 onBackClick = {
                     Log.d(TAG, "Profile → geri")
+                    navController.popBackStack()
+                },
+                onSecurityAuditClick = {
+                    Log.d(TAG, "Profile → Güvenlik Günlüğü")
+                    navController.navigate(Screen.SecurityAudit.route)
+                }
+            )
+        }
+
+        composable(Screen.SecurityAudit.route) {
+            Log.d(TAG, "→ SecurityAudit ekranı")
+            SecurityAuditScreen(
+                onBackClick = {
+                    Log.d(TAG, "SecurityAudit → geri")
                     navController.popBackStack()
                 }
             )

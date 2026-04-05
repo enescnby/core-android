@@ -12,8 +12,10 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material.icons.filled.ErrorOutline
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -63,30 +65,65 @@ fun ChatScreen(
     }
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable{ onProfileClick(uiState.chatId) }
-                    ) {
-                        Text(
-                            text = uiState.chatName,
-                            style = MaterialTheme.typography.titleMedium
+            if (uiState.isSearchActive) {
+                // Arama modu TopAppBar
+                TopAppBar(
+                    title = {
+                        OutlinedTextField(
+                            value = uiState.searchQuery,
+                            onValueChange = { viewModel.onSearchQueryChange(it) },
+                            placeholder = { Text("Mesajlarda ara...") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            shape = RoundedCornerShape(24.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = Color.Transparent
+                            )
                         )
-                        Text(
-                            text = "Profil detayları için tıkla",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = { viewModel.toggleSearch() }) {
+                            Icon(Icons.Default.Close, contentDescription = "Aramayı Kapat")
+                        }
                     }
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Geri")
+                )
+            } else {
+                // Normal TopAppBar
+                TopAppBar(
+                    title = {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onProfileClick(uiState.chatId) }
+                        ) {
+                            Text(
+                                text = uiState.chatName,
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            val subtitle = uiState.lastSeenText.ifBlank { "Profil detayları için tıkla" }
+                            Text(
+                                text = subtitle,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = if (uiState.lastSeenText == "Çevrimiçi")
+                                    Color(0xFF4CAF50)
+                                else
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = onBackClick) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Geri")
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = { viewModel.toggleSearch() }) {
+                            Icon(Icons.Default.Search, contentDescription = "Mesajlarda Ara")
+                        }
                     }
-                }
-            )
+                )
+            }
         }
     ) { paddingValues ->
         Column(
@@ -94,6 +131,38 @@ fun ChatScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
+            // Arama sonuçları
+            if (uiState.isSearchActive && uiState.searchQuery.isNotBlank()) {
+                if (uiState.searchResults.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            "Sonuç bulunamadı",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
+                        contentPadding = PaddingValues(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(uiState.searchResults, key = { it.messageId }) { message ->
+                            MessageItem(message = message, isMe = message.senderId == uiState.myShadeId)
+                        }
+                    }
+                    return@Scaffold
+                }
+                return@Scaffold
+            }
+
             val reversedMessages = remember(uiState.messages) { uiState.messages.reversed() }
             LazyColumn(
                 state = listState,
