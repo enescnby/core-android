@@ -1,4 +1,4 @@
 *.rs linguist-detectable=true
-app/rust/src/* linguist-detectable
-app/rust/src/* linguist-documentation=false
-app/rust/src/* linguist-vendored=false
+app/rust/shade-crypto/** linguist-detectable
+app/rust/shade-crypto/** linguist-documentation=false
+app/rust/shade-crypto/** linguist-vendored=false
