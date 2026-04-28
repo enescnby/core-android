@@ -27,8 +27,13 @@ interface ChatDao {
 
     @Query("UPDATE chats SET lastMessage = :lastMessage, lastMessageTimestamp = :timestamp WHERE chatId = :chatId")
     suspend fun updateLastMessage(chatId: String, lastMessage: String, timestamp: Long): Int
+
     @Query("UPDATE chats SET unreadCount = unreadCount + 1, lastMessage = :lastMessage, lastMessageTimestamp = :timestamp WHERE chatId = :chatId")
     suspend fun incrementUnreadCount(chatId: String, lastMessage: String, timestamp: Long): Int
+
+    @Query("UPDATE chats SET unreadCount = 0, lastMessage = :lastMessage, lastMessageTimestamp = :timestamp WHERE chatId = :chatId")
+    suspend fun updateLastMessageNoIncrement(chatId: String, lastMessage: String, timestamp: Long): Int
+
     @Query("UPDATE chats SET unreadCount = 0 WHERE chatId = :chatId")
     suspend fun resetUnreadCount(chatId: String)
 

@@ -1,5 +1,6 @@
 package com.shade.app.ui.home
 
+import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -8,7 +9,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Chat
-import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.filled.People
+import androidx.compose.material.icons.filled.Security
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,138 +26,71 @@ import com.shade.app.ui.theme.*
 import java.text.SimpleDateFormat
 import java.util.*
 
+private const val TAG = "SHADE_HOME"
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     onChatClick: (String, String) -> Unit,
     onNavigateToContacts: () -> Unit,
+    onLogout: () -> Unit = {},
+    onSecurityAuditClick: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val lookupState by viewModel.lookupState.collectAsState()
+    val loggedOut by viewModel.loggedOut.collectAsState()
 
-    var showLookupDialog by remember { mutableStateOf(false) }
-    var shadeIdInput by remember { mutableStateOf("") }
-
-    LaunchedEffect(lookupState) {
-        if (lookupState is LookupUiState.Success) {
-            showLookupDialog = false
-            shadeIdInput = ""
-            viewModel.resetLookupState()
-        }
+    LaunchedEffect(Unit) {
+        Log.d(TAG, "HomeScreen açıldı")
     }
 
-    if (showLookupDialog) {
-        AlertDialog(
-            onDismissRequest = {
-                viewModel.resetLookupState()
-            },
-            containerColor = SurfaceElevated,
-            shape = RoundedCornerShape(24.dp),
-            title = {
-                Text(
-                    "Yeni Mesaj",
-                    fontWeight = FontWeight.Bold,
-                    color = TextPrimary
-                )
-            },
-            text = {
-                Column {
-                    Text(
-                        text = "Mesaj göndermek istediğin kişinin Shade ID'sini gir.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = TextSecondary
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    OutlinedTextField(
-                        value = shadeIdInput,
-                        onValueChange = { shadeIdInput = it },
-                        label = { Text("Shade ID") },
-                        placeholder = { Text("Örn: CG-####-####", color = TextMuted) },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        shape = RoundedCornerShape(14.dp),
-                        isError = lookupState is LookupUiState.Error,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = AccentPurple,
-                            unfocusedBorderColor = OutlineMuted,
-                            focusedLabelColor = AccentPurple,
-                            unfocusedLabelColor = TextMuted,
-                            focusedTextColor = TextPrimary,
-                            unfocusedTextColor = TextPrimary,
-                            cursorColor = AccentPurple
-                        )
-                    )
-                    if (lookupState is LookupUiState.Error) {
-                        Text(
-                            text = (lookupState as LookupUiState.Error).message.asString(),
-                            color = ErrorRed,
-                            style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.padding(top = 4.dp)
-                        )
-                    }
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = { viewModel.startLookup(shadeIdInput, onChatClick) },
-                    enabled = shadeIdInput.isNotBlank() && lookupState !is LookupUiState.Loading,
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = AccentPurple
-                    )
-                ) {
-                    if (lookupState is LookupUiState.Loading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(20.dp),
-                            strokeWidth = 2.dp,
-                            color = Color.White
-                        )
-                    } else {
-                        Text("Ara ve Başlat", fontWeight = FontWeight.Medium)
-                    }
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showLookupDialog = false }) {
-                    Text("İptal", color = TextSecondary)
-                }
-            }
-        )
+    LaunchedEffect(loggedOut) {
+        if (loggedOut) onLogout()
+    }
+
+    DisposableEffect(Unit) {
+        onDispose { Log.d(TAG, "HomeScreen kapandı") }
     }
 
     Scaffold(
         containerColor = RichBlack,
         topBar = {
-            Surface(
-                color = SurfaceDark,
-                shadowElevation = 2.dp
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .statusBarsPadding()
-                        .padding(horizontal = 20.dp, vertical = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Shade",
-                        style = MaterialTheme.typography.headlineLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = TextPrimary
-                    )
+            TopAppBar(
+                title = { Text("Shade") },
+                actions = {
+                    IconButton(onClick = {
+                        Log.d(TAG, "Kişiler butonuna tıklandı")
+                        onNavigateToContacts()
+                    }) {
+                        Icon(Icons.Default.People, contentDescription = "Kişiler")
+                    }
+                    IconButton(onClick = {
+                        Log.d(TAG, "Güvenlik Günlüğü butonuna tıklandı")
+                        onSecurityAuditClick()
+                    }) {
+                        Icon(Icons.Default.Security, contentDescription = "Hesap Etkinliği")
+                    }
+                    IconButton(onClick = {
+                        Log.d(TAG, "Çıkış butonuna tıklandı")
+                        viewModel.logout()
+                    }) {
+                        Icon(Icons.Default.ExitToApp, contentDescription = "Çıkış Yap")
+                    }
                 }
-            }
+            )
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { showLookupDialog = true },
+                onClick = {
+                    Log.d(TAG, "Yeni mesaj FAB tıklandı → Kişiler ekranına geçiliyor")
+                    onNavigateToContacts()
+                },
                 containerColor = AccentPurple,
                 contentColor = Color.White,
                 shape = RoundedCornerShape(16.dp),
                 modifier = Modifier.navigationBarsPadding()
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Yeni Mesaj")
+                Icon(Icons.AutoMirrored.Filled.Chat, contentDescription = "Yeni Mesaj")
             }
         }
     ) { paddingValues ->
@@ -200,9 +136,13 @@ fun HomeScreen(
                         ChatItem(
                             chat = chat,
                             onClick = {
+                                Log.d(TAG, "Sohbete tıklandı: ${chat.chat.chatId}")
                                 onChatClick(chat.chat.chatId, chat.displayName)
                             },
-                            onDelete = { viewModel.deleteChat(chat) }
+                            onDelete = {
+                                Log.d(TAG, "Sohbet silme: ${chat.chat.chatId}")
+                                viewModel.deleteChat(chat)
+                            }
                         )
                     }
                 }

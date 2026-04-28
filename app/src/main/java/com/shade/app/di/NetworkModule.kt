@@ -2,9 +2,11 @@ package com.shade.app.di
 
 import android.content.Context
 import com.shade.app.BuildConfig
+import com.shade.app.data.remote.api.AuditService
 import com.shade.app.data.remote.api.AuthService
 import com.shade.app.data.remote.api.MediaService
 import com.shade.app.data.remote.api.MessageService
+import com.shade.app.data.remote.api.TranslationService
 import com.shade.app.data.remote.api.UserService
 import com.shade.app.data.remote.websocket.ShadeWebSocketManager
 import com.shade.app.data.remote.websocket.ShadeWebSocketManagerImpl
@@ -19,6 +21,7 @@ import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.time.Duration
+import javax.inject.Named
 import javax.inject.Singleton
 
 @Module
@@ -45,6 +48,28 @@ object NetworkModule {
     @Singleton
     fun provideUserService(retrofit: Retrofit): UserService {
         return retrofit.create(UserService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideAuditService(retrofit: Retrofit): AuditService {
+        return retrofit.create(AuditService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    @Named("translation")
+    fun provideTranslationRetrofit(): Retrofit {
+        return Retrofit.Builder()
+            .baseUrl("https://api.mymemory.translated.net/")
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+    }
+
+    @Provides
+    @Singleton
+    fun provideTranslationService(@Named("translation") retrofit: Retrofit): TranslationService {
+        return retrofit.create(TranslationService::class.java)
     }
 
     @Provides

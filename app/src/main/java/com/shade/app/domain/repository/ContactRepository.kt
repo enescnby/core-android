@@ -13,4 +13,5 @@ interface ContactRepository {
     suspend fun getOrFetchContact(shadeId: String): ContactEntity?
     suspend fun deleteContact(contact: ContactEntity)
     suspend fun updateContactName(shadeId: String, newName: String)
+    suspend fun setBlocked(userId: String, isBlocked: Boolean)
 }

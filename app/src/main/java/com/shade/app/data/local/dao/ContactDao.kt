@@ -30,6 +30,10 @@ interface ContactDao {
 
     @Query("UPDATE contacts SET savedName = :newName WHERE shadeId = :shadeId")
     suspend fun updateNameByShadeId(shadeId: String, newName: String)
+
+    @Query("UPDATE contacts SET isBlocked = :isBlocked WHERE userId = :userId")
+    suspend fun setBlocked(userId: String, isBlocked: Boolean)
+
     @Delete
     suspend fun deleteContact(contact: ContactEntity)
 }
