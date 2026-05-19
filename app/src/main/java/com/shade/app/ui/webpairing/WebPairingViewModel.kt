@@ -202,6 +202,7 @@ class WebPairingViewModel @Inject constructor(
                     }
                 }.onSuccess {
                     if (_state.value != WebPairingUiState.Authorizing) return@onSuccess
+                    Log.i(TAG, "▶ QR_SESSION_ID parsed from QR: \"${qr.s}\"")
                     Log.d(TAG, "Authorize OK → opening sync WS")
                     _state.value = WebPairingUiState.Connecting
                     syncSocketManager.connect(qr.s)

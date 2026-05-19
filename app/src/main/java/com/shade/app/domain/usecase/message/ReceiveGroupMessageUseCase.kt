@@ -1,10 +1,13 @@
 package com.shade.app.domain.usecase.message
 
+import android.util.Base64
 import android.util.Log
+import com.google.gson.Gson
 import com.shade.app.crypto.SenderKeyCryptoManager
 import com.shade.app.data.local.entities.MessageEntity
 import com.shade.app.data.local.entities.MessageStatus
 import com.shade.app.data.local.entities.PeerSenderKeyEntity
+import com.shade.app.domain.model.ImageMessageContent
 import com.shade.app.domain.repository.ChatRepository
 import com.shade.app.domain.repository.ContactRepository
 import com.shade.app.domain.repository.MessageRepository
@@ -20,6 +23,7 @@ import com.shade.app.proto.deliveryReceipt
 import com.shade.app.proto.webSocketMessage
 import com.shade.app.security.KeyVaultManager
 import com.shade.app.util.ActiveChatTracker
+import com.shade.app.util.ImageFileManager
 import com.shade.app.util.NotificationHelper
 import org.bouncycastle.util.encoders.Hex
 import javax.inject.Inject
@@ -46,7 +50,10 @@ class ReceiveGroupMessageUseCase @Inject constructor(
     private val keyVaultManager: KeyVaultManager,
     private val notificationHelper: NotificationHelper,
     private val activeChatTracker: ActiveChatTracker,
+    private val imageFileManager: ImageFileManager,
 ) {
+    private val gson = Gson()
+
     suspend operator fun invoke(payload: EncryptedPayload, sendReceipt: Boolean = true) {
         try {
             val myUserId = keyVaultManager.getUserId() ?: return
@@ -188,6 +195,18 @@ class ReceiveGroupMessageUseCase @Inject constructor(
             MessageType.AUDIO -> com.shade.app.data.local.entities.MessageType.AUDIO
             else              -> com.shade.app.data.local.entities.MessageType.TEXT
         }
+
+        var thumbnailPath: String? = null
+        if (msgType == com.shade.app.data.local.entities.MessageType.IMAGE) {
+            try {
+                val imageContent = gson.fromJson(plaintext, ImageMessageContent::class.java)
+                val thumbnailBytes = Base64.decode(imageContent.thumbnailBase64, Base64.NO_WRAP)
+                thumbnailPath = imageFileManager.saveThumbnail(payload.messageId, thumbnailBytes)
+            } catch (e: Exception) {
+                Log.e(TAG, "Thumbnail save failed: ${e.message}")
+            }
+        }
+
         val entity = MessageEntity(
             messageId = payload.messageId,
             senderId = senderShadeId,
@@ -197,6 +216,7 @@ class ReceiveGroupMessageUseCase @Inject constructor(
             timestamp = payload.timestamp,
             messageType = msgType,
             status = MessageStatus.DELIVERED,
+            thumbnailPath = thumbnailPath,
         )
         messageRepository.insertMessage(entity)
 

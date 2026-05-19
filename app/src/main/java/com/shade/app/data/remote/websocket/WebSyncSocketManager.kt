@@ -69,6 +69,8 @@ class WebSyncSocketManager @Inject constructor(
             val baseWs = BuildConfig.WS_URL.trimEnd('/')
             val url = "$baseWs/sync/$sessionId?token=$token&role=android"
 
+            Log.i(TAG, "▶ SYNC_SESSION_ID Android sends: \"$sessionId\"")
+            Log.i(TAG, "▶ SYNC_URL full: $url")
             Log.d(TAG, "Connecting sync WS → $url")
             _state.value = State.Connecting
 

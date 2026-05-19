@@ -82,6 +82,7 @@ class ContactRepositoryImpl @Inject constructor(
             try {
                 val token = "Bearer ${keyVaultManager.getAccessToken()}"
                 val response = userService.lookup(token, shadeId)
+                Log.d(TAG, "lookup response [$shadeId]: code=${response.code()} body=${response.body()} errorBody=${response.errorBody()?.string()}")
                 if (response.isSuccessful) {
                     response.body()?.let { dto ->
                         val freshProfileName = dto.displayName?.takeIf { it.isNotBlank() }
@@ -118,6 +119,7 @@ class ContactRepositoryImpl @Inject constructor(
                     }
                 } else local
             } catch (e: Exception) {
+                Log.e(TAG, "getOrFetchContact hata [$shadeId]: ${e.message}", e)
                 local
             }
         }

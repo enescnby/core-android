@@ -1,5 +1,6 @@
 package com.shade.app.ui.user
 
+import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -100,8 +101,19 @@ class ProfileViewModel @Inject constructor(
     }
 
     fun saveContact(name: String) {
-        val currentContact = _uiState.value.contact ?: return
-        if (currentContact.savedName == name || name.isBlank()) return
+        val currentContact = _uiState.value.contact
+        if (currentContact == null) {
+            Log.w("ProfileVM", "saveContact erken çıkış: contact null (lookup başarısız olmuş olabilir)")
+            return
+        }
+        if (name.isBlank()) {
+            Log.w("ProfileVM", "saveContact erken çıkış: name boş")
+            return
+        }
+        if (currentContact.savedName == name) {
+            Log.d("ProfileVM", "saveContact erken çıkış: aynı isim zaten kayıtlı ('$name')")
+            return
+        }
         viewModelScope.launch {
             contactRepository.updateContactName(shadeId, name)
             val updated = contactRepository.getContactByShadeId(shadeId)
